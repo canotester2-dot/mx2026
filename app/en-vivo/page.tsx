@@ -1,145 +1,114 @@
 "use client";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
-
-// =====================================================
-// PEGA TU CÓDIGO EMBED AQUÍ DENTRO DEL IFRAME O HTML
-// =====================================================
-const EMBED_URL = ""; // <-- Pega aquí la URL de tu embed si es un iframe simple
-const EMBED_HTML = ``; // <-- O pega aquí el código HTML completo del embed
+import { peliculas } from "@/lib/peliculas";
 
 export default function EnVivo() {
+  const [transmision, setTransmision] = useState<{ titulo: string; embedHtml: string; activa: boolean } | null>(null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/transmision")
+      .then((r) => r.json())
+      .then((data) => {
+        setTransmision(data);
+        setCargando(false);
+      })
+      .catch(() => setCargando(false));
+  }, []);
+
+  const proximosPartidos = peliculas.slice(0, 5);
+
   return (
     <main className="min-h-screen text-white" style={{ backgroundColor: "#0a0f0a" }}>
-      <Navbar />
+      <Navbar paginaActiva="en-vivo" />
 
-      <section className="px-8 py-8">
-        {/* Encabezado */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-4 mb-6"
-        >
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row gap-0 min-h-[calc(100vh-64px)]">
+        {/* Panel principal — transmisión */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3">
             <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-red-400 font-bold text-sm tracking-widest">EN VIVO</span>
+            <span className="font-bold text-red-400 text-sm uppercase tracking-wider">En Vivo</span>
+            {transmision?.titulo && (
+              <>
+                <span className="text-gray-600">—</span>
+                <span className="text-white font-semibold">{transmision.titulo}</span>
+              </>
+            )}
           </div>
-          <h1 className="text-3xl font-black">Transmisión en vivo</h1>
-        </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Player principal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-2"
-          >
-            {/* ÁREA DEL EMBED */}
-            <div className="relative w-full rounded-2xl overflow-hidden bg-gray-900 border border-white/10" style={{ aspectRatio: "16/9" }}>
-              {EMBED_URL ? (
-                <iframe
-                  src={EMBED_URL}
-                  className="w-full h-full"
-                  allowFullScreen
-                  allow="autoplay; fullscreen"
-                />
-              ) : EMBED_HTML ? (
-                <div
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: EMBED_HTML }}
-                />
-              ) : (
-                /* Pantalla de espera cuando no hay embed */
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                  <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center">
-                    <span className="text-4xl">📡</span>
-                  </div>
-                  <p className="text-xl font-bold">Transmisión próximamente</p>
-                  <p className="text-gray-400 text-sm">La transmisión comenzará en breve</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-red-400 text-sm">Esperando señal...</span>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Área de video */}
+          <div className="flex-1 flex items-center justify-center bg-black relative" style={{ minHeight: "480px" }}>
+            {cargando ? (
+              <div className="text-center">
+                <div className="text-4xl mb-4 animate-pulse">⚽</div>
+                <p className="text-gray-400">Cargando transmisión...</p>
+              </div>
+            ) : transmision?.activa && transmision?.embedHtml ? (
+              <div
+                className="w-full h-full"
+                style={{ minHeight: "480px" }}
+                dangerouslySetInnerHTML={{ __html: transmision.embedHtml }}
+              />
+            ) : (
+              <div className="text-center px-8">
+                <div className="text-7xl mb-6">📺</div>
+                <h2 className="text-2xl font-black mb-3">No hay transmisión activa</h2>
+                <p className="text-gray-400 mb-2">La próxima transmisión comenzará pronto.</p>
+                <p className="text-gray-600 text-sm">Revisa los próximos partidos abajo ↓</p>
+              </div>
+            )}
+          </div>
 
-            {/* Info debajo del player */}
-            <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">StreamMX Live</h2>
-                  <p className="text-gray-400 text-sm">Transmisión oficial de StreamMX</p>
-                </div>
-                <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 px-3 py-1.5 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-red-400 text-sm font-bold">EN VIVO</span>
-                </div>
+          {/* Info del partido */}
+          {transmision?.activa && transmision?.embedHtml && (
+            <div className="px-6 py-4 border-t border-white/10 flex items-center gap-4">
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+              <div>
+                <p className="font-bold text-white">{transmision.titulo || "Partido en vivo"}</p>
+                <p className="text-gray-400 text-sm">Mundial FIFA 2026</p>
               </div>
             </div>
-          </motion.div>
-
-          {/* Panel lateral */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col gap-4"
-          >
-            {/* Chat simulado */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col h-96">
-              <h3 className="font-bold mb-3 text-sm text-gray-400 uppercase tracking-widest">Chat en vivo</h3>
-              <div className="flex-1 flex flex-col gap-2 overflow-y-auto mb-3">
-                {[
-                  { usuario: "CineAmante", msg: "¡Esto está increíble! 🔥", color: "text-green-400" },
-                  { usuario: "FilmFan99", msg: "Qué buena transmisión 👏", color: "text-blue-400" },
-                  { usuario: "StreamMXFan", msg: "Primera vez aquí, me encanta", color: "text-purple-400" },
-                  { usuario: "Cineasta_MX", msg: "¿Cuándo empieza?", color: "text-yellow-400" },
-                  { usuario: "JorgeCano", msg: "Bienvenidos a StreamMX 🎬", color: "text-red-400" },
-                ].map((item, i) => (
-                  <div key={i} className="text-sm">
-                    <span className={`font-bold ${item.color}`}>{item.usuario}: </span>
-                    <span className="text-gray-300">{item.msg}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Escribe un mensaje..."
-                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-400 transition"
-                />
-                <button className="px-3 py-2 bg-green-500 text-black font-bold rounded-lg text-sm hover:bg-green-400 transition">
-                  ➤
-                </button>
-              </div>
-            </div>
-
-            {/* Próximas transmisiones */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <h3 className="font-bold mb-3 text-sm text-gray-400 uppercase tracking-widest">Próximas transmisiones</h3>
-              <div className="flex flex-col gap-3">
-                {[
-                  { titulo: "Noche de Acción", hora: "Hoy 8:00 PM" },
-                  { titulo: "Clásicos del Cine", hora: "Mañana 7:00 PM" },
-                  { titulo: "Maratón Nolan", hora: "Sábado 6:00 PM" },
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
-                    <span className="text-sm font-medium">{item.titulo}</span>
-                    <span className="text-xs text-green-400">{item.hora}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+          )}
         </div>
-      </section>
 
-      <footer className="text-center text-gray-600 py-8 border-t border-white/10 mt-8">
-        © 2025 StreamMX. Todos los derechos reservados.
-      </footer>
+        {/* Panel lateral */}
+        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
+          {/* Próximos partidos */}
+          <div className="px-4 py-4 border-b border-white/10">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">⚽ Próximos Partidos</h3>
+            <div className="flex flex-col gap-3">
+              {proximosPartidos.map((partido) => (
+                <a
+                  key={partido.id}
+                  href={`/pelicula/${partido.id}`}
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition group"
+                >
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${partido.color} to-black flex items-center justify-center text-2xl flex-shrink-0`}>
+                    ⚽
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate group-hover:text-yellow-400 transition">{partido.titulo}</p>
+                    <p className="text-gray-500 text-xs">{partido.genero}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <a href="/catalogo" className="mt-4 block text-center text-sm text-yellow-400 hover:text-yellow-300 transition">
+              Ver todos los partidos →
+            </a>
+          </div>
+
+          {/* Info */}
+          <div className="px-4 py-4">
+            <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-4">
+              <p className="text-yellow-400 font-bold text-sm mb-1">🏆 Mundial FIFA 2026</p>
+              <p className="text-gray-400 text-xs">México, Estados Unidos y Canadá son las sedes del torneo más grande del mundo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

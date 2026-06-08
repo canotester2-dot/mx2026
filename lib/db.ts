@@ -23,6 +23,14 @@ async function initDB() {
       creadoEn TEXT DEFAULT (datetime('now')),
       UNIQUE(usuarioId, peliculaId)
     );
+
+    CREATE TABLE IF NOT EXISTS Transmision (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      titulo TEXT NOT NULL DEFAULT 'Partido en vivo',
+      embedHtml TEXT NOT NULL DEFAULT '',
+      activa INTEGER NOT NULL DEFAULT 1,
+      actualizadoEn TEXT DEFAULT (datetime('now'))
+    );
   `);
 }
 
