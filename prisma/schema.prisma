@@ -1,0 +1,43 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id        Int        @id @default(autoincrement())
+  nombre    String
+  email     String     @unique
+  password  String
+  creadoEn  DateTime   @default(now())
+  favoritos Favorito[]
+}
+
+model Pelicula {
+  id          Int        @id @default(autoincrement())
+  titulo      String
+  descripcion String
+  genero      String
+  año         Int
+  duracion    String
+  director    String
+  reparto     String
+  rating      Float
+  color       String
+  creadoEn    DateTime   @default(now())
+  favoritos   Favorito[]
+}
+
+model Favorito {
+  id         Int      @id @default(autoincrement())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId  Int
+  pelicula   Pelicula @relation(fields: [peliculaId], references: [id])
+  peliculaId Int
+  creadoEn   DateTime @default(now())
+
+  @@unique([usuarioId, peliculaId])
+}
